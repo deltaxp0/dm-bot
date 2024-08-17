@@ -1,4 +1,5 @@
 import discord
+import random
 from discord.ext import commands
 
 intents = discord.Intents.default()
@@ -60,6 +61,16 @@ async def on_message(message):
                 await message.channel.send("No such registered player found!")
                 print(msg[1])
                 return
+    if message.content.startswith('!roll'):
+        msg = message.content.split()
+        if len(msg) < 2 or len(msg) > 2 or int(msg[1]) not in [4,6,8,10,12,20]:
+            await message.channel.send("Incorrect usage! Should be: !roll [4,6,8,10,12,20]")
+            return
+        else:
+            sides = int(msg[1])
+            await message.channel.send(str(random.randint(1, sides)))
+            
+            
 
 
 @client.event
