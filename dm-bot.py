@@ -1,8 +1,13 @@
+import os
 import discord
 import random
 
+from dotenv import load_dotenv, dotenv_values
+
 intents = discord.Intents.default()
 intents.message_content = True
+
+load_dotenv()
 
 REACTION = '✅'
 
@@ -138,4 +143,4 @@ async def on_reaction_add(reaction, user):
         ids[user.name] = user.id
         await sectors["test"].send(f"<@{user.id}> welcome to test!")
 
-client.run('TOKEN')
+client.run(os.getenv('TOKEN')) 
