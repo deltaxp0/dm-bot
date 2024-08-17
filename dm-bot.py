@@ -109,6 +109,7 @@ async def on_message(message):
             embed.add_field(name="Strength", value=stats[msg[1]].strength)
             embed.add_field(name="Speed", value=stats[msg[1]].speed)
             embed.add_field(name="Defence", value=stats[msg[1]].defence)
+            
             await message.channel.send(embed=embed)
        except KeyError:
            await message.channel.send("No such player found!")
@@ -121,7 +122,14 @@ async def on_message(message):
             return
         else:
             sides = int(msg[1])
-            await message.channel.send(str(random.randint(1, sides)))
+            embed = discord.Embed(
+            title=msg[1] + "Dices:",
+            color=discord.Color.blurple()
+            )
+            #roll 6 times
+            for i in range(6):
+                embed.add_field(name="Dice " + str(i+1), value=str(random.randint(1, sides)))
+            await message.channel.send(embed=embed)
            
 @client.event
 async def on_reaction_add(reaction, user):
