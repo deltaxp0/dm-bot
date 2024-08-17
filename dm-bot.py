@@ -1,10 +1,14 @@
+import os
 import discord
 import random
+
+from dotenv import load_dotenv, dotenv_values
 
 intents = discord.Intents.default()
 intents.message_content = True
 
 client = discord.Client(intents=intents)
+load_dotenv()
 
 players = {}
 stats = {}
@@ -16,15 +20,15 @@ registered_messages = []
 
 #Delta: Added player class. Should be extensible enough.
 class Player:
-    def __init__(self, name, class_name, str, con, dex, cha, wis, int):
+    def __init__(self, name, class_name, str, dex, con, int, wis, cha):
         self.name = name
         self.class_name = class_name
         self.str = str
-        self.con = con
         self.dex = dex
-        self.cha = cha
-        self.wis = wis
+        self.con = con
         self.int = int
+        self.wis = wis
+        self.cha = cha
 
 @client.event
 async def on_ready():
@@ -38,6 +42,7 @@ async def on_ready():
     await register_message.add_reaction('💀')
     await register_message.add_reaction('🧢')
     await register_message.add_reaction('🔥')
+    await register_message.add_reaction('🧙‍♂️')
     registered_messages.append(register_message)
 
 @client.event
@@ -151,12 +156,23 @@ async def on_reaction_add(reaction, user):
         for _ in range(6):
             stats.append(random.randint(1, sides) + 12)
         
-        #name, class_name, str = 0, con = 1, dex = 2, cha = 3, wis = 4, int = 5
-        if reaction.emoji == '💀':
-            stats.sort(reverse=True)
-            players[user.name] = Player(user.name, "Fighter", stats[0], stats[1], stats[2], stats[3], stats[4], stats[5])
-        if reaction.emoji == '🧢':
-            players[user.name] = Player(user.name, "Rogue", stats[1], stats[0], stats[2], stats[5], stats[4], stats[0])
+        # name, class_name, Str = 0, Dex = 1, Con = 2, Int = 3, Wis = 4, Cha = 5
+
+        # fighter:  Str, Dex, Con, Cha, Wis, Int [0, 1, 2, 5, 4, 3]
+        # rogue:    Dex, Str, Con, Wis, Int, Cha [1, 0, 2, 4, 3, 5]
+        # cleric:   Wis, Con, Str, Dex, Cha, Int [4, 2, 0, 1, 5, 3]
+        # wizard:   Int, Dex, Con, Cha, Wis, Str [3, 1, 2, 5, 4, 0]
+
+        stats.sort(reverse=True)
+        match reaction.emoji:
+            case '💀':
+                players[user.name] = Player(user.name, "Fighter", stats[0], stats[1], stats[2], stats[5], stats[4], stats[3])
+            case '🧢':
+                players[user.name] = Player(user.name, "Rogue", stats[1], stats[0], stats[2], stats[4], stats[3], stats[5])
+            case '🔥':
+                players[user.name] = Player(user.name, "Cleric", stats[4], stats[2], stats[0], stats[1], stats[5], stats[3])
+            case '🧙‍♂️':
+                players[user.name] = Player(user.name, "Wizard", stats[3], stats[1], stats[2], stats[5], stats[4], stats[0])
         
         print(players[user.name].name)
         print(players[user.name].class_name)
@@ -167,4 +183,4 @@ async def on_reaction_add(reaction, user):
         print(players[user.name].wis)
         print(players[user.name].int)
 
-client.run(os.getenv('TOKEN')) 
+client.run(os.getenv('TOKEN'))
