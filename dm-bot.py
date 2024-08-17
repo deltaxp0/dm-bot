@@ -1,6 +1,4 @@
-import os
-import discord
-import random
+import os, discord, random, json
 
 from dotenv import load_dotenv, dotenv_values
 
@@ -13,13 +11,29 @@ REACTION = '✅'
 
 client = discord.Client(intents=intents)
 
-players = {}
+if os.path.exists("db.json"):
+    with open("db.json", "r") as f:
+        db = json.load(f)
+        players = db["players"]
+        stats = db["stats"]
+        ids = db["ids"]
+        sectors = db["sectors"]
+        registered_messages = db["registered_messages"]
+else:
+    with open("db.json", 'w') as file:
+        file.write("{players={},stats={},ids={},sectors={},registered_messages=[]}")
+
+def update_db():
+    with open("db.json", 'w') as file:
+        json.dump({'players'=players,'stats'=stats,'ids'=ids,'sectors'=sectors,'registered_messages'=registered_messages}, file, indent=4)
+
+'''players = {}
 stats = {}
 ids = {}
 
 sectors = {}
 
-registered_messages = []
+registered_messages = []'''
 
 #Delta: Added player class. Should be extensible enough.
 class Player:
