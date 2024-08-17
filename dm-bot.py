@@ -1,15 +1,8 @@
-import os
 import discord
 import random
 
-from dotenv import load_dotenv, dotenv_values
-
 intents = discord.Intents.default()
 intents.message_content = True
-
-load_dotenv()
-
-REACTION = '✅'
 
 client = discord.Client(intents=intents)
 
@@ -23,11 +16,15 @@ registered_messages = []
 
 #Delta: Added player class. Should be extensible enough.
 class Player:
-    def __init__(self, name, strength, speed, defence):
+    def __init__(self, name, class_name, str, con, dex, cha, wis, int):
         self.name = name
-        self.strength = strength
-        self.speed = speed
-        self.defence = defence
+        self.class_name = class_name
+        self.str = str
+        self.con = con
+        self.dex = dex
+        self.cha = cha
+        self.wis = wis
+        self.int = int
 
 @client.event
 async def on_ready():
@@ -38,7 +35,9 @@ async def on_ready():
     sectors['test-3'] = client.get_channel(1274388788092731434)
 
     register_message = await channel.send("Please react to this message to be registed as a player!")
-    await register_message.add_reaction(REACTION)
+    await register_message.add_reaction('💀')
+    await register_message.add_reaction('🧢')
+    await register_message.add_reaction('🔥')
     registered_messages.append(register_message)
 
 @client.event
@@ -133,7 +132,7 @@ async def on_message(message):
             )
             #roll 6 times
             for i in range(6):
-                embed.add_field(name="Dice " + str(i+1), value=str(random.randint(1, sides)))
+                embed.add_field(name="Dice " + str(i+1), value=str(random.randint(1, sides) + 12))
             await message.channel.send(embed=embed)
            
 @client.event
@@ -142,5 +141,30 @@ async def on_reaction_add(reaction, user):
         players[user.name] = 'test'
         ids[user.name] = user.id
         await sectors["test"].send(f"<@{user.id}> welcome to test!")
+        for sector in sectors:
+            if sector != "test":
+                await sectors[sector].remove_user(user)
+        
+        #Stats section
+        sides = 4
+        stats = []
+        for _ in range(6):
+            stats.append(random.randint(1, sides) + 12)
+        
+        #name, class_name, str = 0, con = 1, dex = 2, cha = 3, wis = 4, int = 5
+        if reaction.emoji == '💀':
+            stats.sort(reverse=True)
+            players[user.name] = Player(user.name, "Fighter", stats[0], stats[1], stats[2], stats[3], stats[4], stats[5])
+        if reaction.emoji == '🧢':
+            players[user.name] = Player(user.name, "Rogue", stats[1], stats[0], stats[2], stats[5], stats[4], stats[0])
+        
+        print(players[user.name].name)
+        print(players[user.name].class_name)
+        print(players[user.name].str)
+        print(players[user.name].con)
+        print(players[user.name].dex)
+        print(players[user.name].cha)
+        print(players[user.name].wis)
+        print(players[user.name].int)
 
 client.run(os.getenv('TOKEN')) 
