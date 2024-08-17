@@ -59,6 +59,7 @@ async def on_message(message):
         #await message.channel.send(str(players))
 
         embed=discord.Embed(title="List")
+        print(grouped_data)
         for value, keys in grouped_data.items():
         # Join the keys into a single string, separated by a new line
             keys_str = "\n".join(keys)
@@ -166,21 +167,13 @@ async def on_reaction_add(reaction, user):
         stats.sort(reverse=True)
         match reaction.emoji:
             case '💀':
-                players[user.name] = Player(user.name, "Fighter", stats[0], stats[1], stats[2], stats[5], stats[4], stats[3])
+                stats[user.name] = Player(user.name, "Fighter", stats[0], stats[1], stats[2], stats[5], stats[4], stats[3])
             case '🧢':
-                players[user.name] = Player(user.name, "Rogue", stats[1], stats[0], stats[2], stats[4], stats[3], stats[5])
+                stats[user.name] = Player(user.name, "Rogue", stats[1], stats[0], stats[2], stats[4], stats[3], stats[5])
             case '🔥':
-                players[user.name] = Player(user.name, "Cleric", stats[4], stats[2], stats[0], stats[1], stats[5], stats[3])
+                stats[user.name] = Player(user.name, "Cleric", stats[4], stats[2], stats[0], stats[1], stats[5], stats[3])
             case '🧙‍♂️':
-                players[user.name] = Player(user.name, "Wizard", stats[3], stats[1], stats[2], stats[5], stats[4], stats[0])
+                stats[user.name] = Player(user.name, "Wizard", stats[3], stats[1], stats[2], stats[5], stats[4], stats[0])
         
-        print(players[user.name].name)
-        print(players[user.name].class_name)
-        print(players[user.name].str)
-        print(players[user.name].con)
-        print(players[user.name].dex)
-        print(players[user.name].cha)
-        print(players[user.name].wis)
-        print(players[user.name].int)
 
 client.run(os.getenv('TOKEN'))
