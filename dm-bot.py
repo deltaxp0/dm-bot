@@ -8,8 +8,16 @@ intents.message_content = True
 client = discord.Client(intents=intents)
 
 players = {}
+stats = {}
 
 registered_messages = []
+
+class Player:
+    def __init__(self, name, strength, speed, defence):
+        self.name = name
+        self.strength = strength
+        self.speed = speed
+        self.defence = defence
 
 @client.event
 async def on_ready():
@@ -69,10 +77,45 @@ async def on_message(message):
         else:
             sides = int(msg[1])
             await message.channel.send(str(random.randint(1, sides)))
-            
-            
 
 
+    if message.content.startswith('!register_stats'):
+        dm_role = discord.utils.get(message.author.roles, name="D&D Staff")
+        if dm_role is None:
+            return
+        msg = message.content.split()
+        if len(msg) < 5 or len(msg) > 5:
+            await message.channel.send("Incorrect usage! Should be: !register_stats [name] [strength] [speed] [defence]")
+            return
+        if msg[1] not in players:
+            await message.channel.send("This user is not playing!")
+            return
+        
+        new_player = Player(msg[1], msg[2], msg[3], msg[4])
+        stats[msg[1]] = new_player
+    
+    if message.content.startswith('!show_stats'):
+       dm_role = discord.utils.get(message.author.roles, name="D&D Staff")
+       if dm_role is None:
+            return
+       msg = message.content.split()
+       if len(msg) < 2 or len(msg) > 2:
+           await message.channel.send("Incorrect usage! Should be: !show_stats [name]")
+           return
+       try:
+            embed = discord.Embed(
+            title=msg[1] + "Stats:",
+            color=discord.Color.blue()
+            )
+            #embed.add_field(name=value, value=keys_str, inline=False)
+            embed.add_field(name="Strength", value=stats[msg[1]].strength)
+            embed.add_field(name="Speed", value=stats[msg[1]].speed)
+            embed.add_field(name="Defence", value=stats[msg[1]].defence)
+            await message.channel.send(embed=embed)
+       except KeyError:
+           await message.channel.send("No such player found!")
+           return
+            
 @client.event
 async def on_reaction_add(reaction, user):
     if reaction.message == registered_messages[0]:
