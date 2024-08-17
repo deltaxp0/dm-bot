@@ -4,6 +4,8 @@ import random
 intents = discord.Intents.default()
 intents.message_content = True
 
+REACTION = '✅'
+
 client = discord.Client(intents=intents)
 
 players = {}
@@ -31,12 +33,12 @@ async def on_ready():
     sectors['test-3'] = client.get_channel(1274388788092731434)
 
     register_message = await channel.send("Please react to this message to be registed as a player!")
-    await register_message.add_reaction('💀')
+    await register_message.add_reaction(REACTION)
     registered_messages.append(register_message)
 
 @client.event
 async def on_message(message):
-    if message.content.startswith('!list'):
+    if message.content.startswith('!list_sectors'):
         dm_role = discord.utils.get(message.author.roles, name="D&D Staff")
         if dm_role is None:
             return
@@ -67,6 +69,10 @@ async def on_message(message):
             if msg[1] in players:
                 players[msg[1]] = msg[2]
                 await sectors[msg[2]].send(f"<@{ids[msg[1]]}> welcome to {msg[2]}!")
+                user = await client.fetch_user(ids[msg[1]])
+                for sector in sectors:
+                    if sector != msg[2]:
+                        await sectors[sector].remove_user(user)
             else:
                 await message.channel.send("No such registered player found!")
                 print(msg[1])
@@ -119,7 +125,6 @@ async def on_message(message):
            
 @client.event
 async def on_reaction_add(reaction, user):
-    global other_channel
     if reaction.message == registered_messages[0] and user.name not in players:
         players[user.name] = 'test'
         ids[user.name] = user.id
