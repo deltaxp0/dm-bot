@@ -39,9 +39,9 @@ async def on_ready():
 async def on_message(message):
     if message.content.startswith('!newgame'):
         register_message = await message.channel.send("Please react to this message to be registed as a player!")
-        await register_message.add_reaction('💀')
-        await register_message.add_reaction('🧢')
-        await register_message.add_reaction('🔥')
+        await register_message.add_reaction('⚔️')
+        await register_message.add_reaction('🗡️')
+        await register_message.add_reaction('🍾')
         await register_message.add_reaction('🧙‍♂️')
         registered_messages.append(register_message)
 
@@ -238,11 +238,11 @@ async def on_reaction_add(reaction, user):
 
         stats.sort(reverse=True)
         match reaction.emoji:
-            case '💀':
+            case '⚔️':
                 stats[user.name] = Player(user.name, "Fighter", stats[0], stats[1], stats[2], stats[5], stats[4], stats[3])
-            case '🧢':
+            case '🗡️':
                 stats[user.name] = Player(user.name, "Rogue", stats[1], stats[0], stats[2], stats[4], stats[3], stats[5])
-            case '🔥':
+            case '🍾':
                 stats[user.name] = Player(user.name, "Cleric", stats[4], stats[2], stats[0], stats[1], stats[5], stats[3])
             case '🧙‍♂️':
                 stats[user.name] = Player(user.name, "Wizard", stats[3], stats[1], stats[2], stats[5], stats[4], stats[0])
