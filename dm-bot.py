@@ -22,6 +22,20 @@ async def setup_hook() -> None:  # This function is automatically called before 
     await bot.tree.sync()   # This function is used to sync the slash commands with Discord it is mandatory if you want to use slash commands
 
 players = {}
+db = {}
+
+def update_db():
+    with open("db.json", 'w') as file:
+        json.dump(db, file, indent=4)
+
+if os.path.exists("db.json"):
+    with open("db.json", "r") as file:
+        db = json.load(file)
+else:
+    db = {"players":{},"stats":{},"ids":{},"sectors":{},"registry":[]}
+    update_db()
+
+'''players = {}
 stats = {}
 ids = {}
 
@@ -69,8 +83,9 @@ async def start(ctx):
 
     register_message = await channel.send("Please react to this message to be registed as a player!")
     await register_message.add_reaction(REACTION)
-    registered_messages.append(register_message)
+    db["registry"].append(register_message.id)
 
+<<<<<<< Updated upstream
 @bot.hybrid_command()
 @commands.has_role(staff)
 async def sectors(ctx):
@@ -166,5 +181,10 @@ async def on_reaction_add(reaction, user):
         players[user.name] = 'test'
         ids[user.name] = user.id
         await sectors["test"].send(f"<@{user.id}> welcome to test!")
+    if reaction.message == db["registry"][0] and user.name not in db["players"]:
+        db["players"][user.name] = 'test'
+        db["ids"][user.name] = user.id
+        await client.get_channel(db["sectors"]["test"]).send(f"<@{user.id}> welcome to test!")
+    update_db()
 
 bot.run(os.getenv('TOKEN')) 
