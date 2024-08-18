@@ -215,11 +215,12 @@ async def on_message(message):
 @client.event
 async def on_reaction_add(reaction, user):
     if reaction.message == registered_messages[0] and user.name not in players:
-        players[user.name] = 'test'
         ids[user.name] = user.id
-        await sectors["test"].send(f"<@{user.id}> welcome to test!")
+        my_sector = random.choice(list(sectors.keys()))
+        players[user.name] = sectors[my_sector]
+        await sectors[my_sector].send(f"<@{user.id}> welcome to {sectors[my_sector]}!")
         for sector in sectors:
-            if sector != "test":
+            if sector != my_sector:
                 await sectors[sector].remove_user(user)
         
         #Stats section
