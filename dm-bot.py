@@ -5,6 +5,7 @@ intents = discord.Intents.default()
 intents.message_content = True
 
 client = discord.Client(intents=intents)
+load_dotenv()
 
 if os.path.exists("db.json"):
     with open("db.json", "r") as f:
