@@ -12,36 +12,25 @@ bot = commands.Bot(command_prefix=commands.when_mentioned_or("!"), intents=inten
 load_dotenv()
 
 # some constants
-REACTION = '✅'
+reactions = ["1️⃣","2️⃣","3️⃣"]
 staff = "D&D Staff"
 dice = [4,6,8,10,12,20]
 
 async def setup_hook() -> None:  # This function is automatically called before the bot starts
     await bot.tree.sync()   # This function is used to sync the slash commands with Discord it is mandatory if you want to use slash commands
 
-if os.path.exists("db.json"):
-    with open("db.json", "r") as f:
-        db = json.load(f)
-        players = db["players"]
-        stats = db["stats"]
-        ids = db["ids"]
-        sectors = db["sectors"]
-        registered_messages = db["registered_messages"]
-else:
-    with open("db.json", 'w') as file:
-        file.write("{players={},stats={},ids={},sectors={},registered_messages=[]}")
+db = {}
 
 def update_db():
     with open("db.json", 'w') as file:
-        json.dump({'players'=players,'stats'=stats,'ids'=ids,'sectors'=sectors,'registered_messages'=registered_messages}, file, indent=4)
+        json.dump(db, file, indent=4)
 
-'''players = {}
-stats = {}
-ids = {}
-
-sectors = {}
-
-registered_messages = []'''
+if os.path.exists("db.json"):
+    with open("db.json", "r") as file:
+        db = json.load(file)
+else:
+    db={"players":{},"stats":{},"sectors":{},"registry":0}
+    update_db()
 
 #Delta: Added player class. Should be extensible enough.
 class Player:
@@ -77,82 +66,73 @@ async def parseUser(guild, user):
 @bot.hybrid_command()
 @commands.has_role(staff)
 async def start(ctx):
-    sectors['test'] = bot.get_channel(1274370660226957342)
-    sectors['test-2'] = bot.get_channel(1274388708073668720)
-    sectors['test-3'] = bot.get_channel(1274388788092731434)
+    db["sectors"]['1'] = 1274803528690438145
+    db["sectors"]['2'] = 1274803583111663618
+    db["sectors"]['3'] = 1274803643308052490
 
-    register_message = await channel.send("Please react to this message to be registed as a player!")
-    await register_message.add_reaction(REACTION)
-    registered_messages.append(register_message)
+    register_message = await ctx.send("Please react to this message to be registered as a player!")
+    for reaction in reactions:
+        await register_message.add_reaction(reaction)
+    db["registry"]=register_message.id
+    update_db()
 
 @bot.hybrid_command()
 @commands.has_role(staff)
 async def sectors(ctx):
     grouped_data = {}
-    for key, value in players.items():
+    for key, value in db["players"].items():
         if value not in grouped_data:
             grouped_data[value] = []
         grouped_data[value].append(key)
-    #await message.channel.send(str(players))
+    #await message.channel.send(str(db["players"]))
 
     embed=discord.Embed(title="List")
-    for value, keys in grouped_data.items():
+    for value, key in grouped_data.items():
     # Join the keys into a single string, separated by a new line
-        keys_str = "\n".join(keys)
+        keys_str = "\n".join("Sector" + key)
     # Add a field to the embed
         embed.add_field(name=value, value=keys_str, inline=False)
-    await message.channel.send(embed=embed)
+    await ctx.channel.send(embed=embed)
     
 @bot.hybrid_command()
 @commands.has_role(staff)
-async def move(ctx):
-    msg = message.content.split()
-    if len(msg) < 3 or len(msg) > 3:
-       await message.channel.send("Incorrect usage! Should be: !move [player] [sector]")
-       return
-    elif len(msg) == 3: #msg[1] = user, msg[2] = sector | Delta: Useless elif statement, lol. 
-        if msg[1] in players:
-            players[msg[1]] = msg[2]
-            await sectors[msg[2]].send(f"<@{ids[msg[1]]}> welcome to {msg[2]}!")
-            user = await bot.fetch_user(ids[msg[1]])
-            for sector in sectors:
-                if sector != msg[2]:
-                    await sectors[sector].remove_user(user)
-        else:
-            await message.channel.send("No such registered player found!")
-            print(msg[1])
-            return
+async def move(ctx, user: discord.User, sector: str):
+    #user = await parseUser(ctx, user)
+    if str(user.id) in db["players"].keys() and sector in db["sectors"].keys():
+        db["players"][user.id] = sector
+        await bot.get_channel(db["sectors"][sector]).send(f"{user.mention} welcome to {sector}!")
+        for sect in db["sectors"]:
+            if sect != sectors:
+                await bot.get_channel(db["sectors"][sector]).remove_user(user)
+        update_db()
+    else:
+        await ctx.channel.send("No such registered player found!")
+        print(user.id)
+        return
 
 @bot.hybrid_command()
 @commands.has_role(staff)
-async def register(ctx):
-    msg = message.content.split()
-    if len(msg) < 5 or len(msg) > 5:
-        await message.channel.send("Incorrect usage! Should be: !register_stats [name] [strength] [speed] [defence]")
-        return
-    if msg[1] not in players:
-        await message.channel.send("This user is not playing!")
+async def register(ctx, user: discord.User, strength: int, speed: int, defence: int):
+    if str(user.id) not in db["players"].keys:
+        await ctx.channel.send("This user is not playing!")
         return
 
-    new_player = Player(msg[1], msg[2], msg[3], msg[4])
-    stats[msg[1]] = new_player
+    new_player = Player(user, strength, speed, defence)
+    db["stats"][user.id] = new_player
+    update_db()
 
 @bot.hybrid_command()
 @commands.has_role(staff)
-async def stats(ctx):
-   msg = message.content.split()
-   if len(msg) < 2 or len(msg) > 2:
-       await message.channel.send("Incorrect usage! Should be: !show_stats [name]")
-       return
+async def stats(ctx, user: discord.User):
    try:
         embed = discord.Embed(
-        title=msg[1] + "Stats:",
+        title=user.name + "Stats:",
         color=discord.Color.blue()
         )
         #embed.add_field(name=value, value=keys_str, inline=False)
-        embed.add_field(name="Strength", value=stats[msg[1]].strength)
-        embed.add_field(name="Speed", value=stats[msg[1]].speed)
-        embed.add_field(name="Defence", value=stats[msg[1]].defence)
+        embed.add_field(name="Strength", value=db["stats"][user.id].strength)
+        embed.add_field(name="Speed", value=db["stats"][user.id].speed)
+        embed.add_field(name="Defence", value=db["stats"][user.id].defence)
         
         await message.channel.send(embed=embed)
    except KeyError:
@@ -165,20 +145,30 @@ async def roll(ctx, sides: Literal[tuple(dice)]):
         await message.channel.send(f"Incorrect usage! Should be: !roll {dice}")
         return'''
     embed = discord.Embed(
-    title=msg[1] + "Dices:",
+    title=str(sides) + "Dice:",
     color=discord.Color.blurple()
     )
     #roll 6 times
-    values = sort([random.randint(1, sides) for _ in range(6)])
+    values = [random.randint(1, sides) for _ in range(6)]
+    values.sort()
     for i in range(6):
-        embed.add_field(name="Dice " + str(i+1), value=str(values[i]))
-    await message.channel.send(embed=embed)
+        embed.add_field(name="Dice " + str(i+1), value=values[i])
+    await ctx.send(embed=embed)
+    
+@bot.hybrid_command()
+@commands.has_role("Coding Department")
+async def stop(ctx):
+    ctx.send("stopping...")
+    update_db()
+    exit(0)
 
 @bot.event
 async def on_reaction_add(reaction, user):
-    if reaction.message == registered_messages[0] and user.name not in players:
-        players[user.name] = 'test'
-        ids[user.name] = user.id
-        await sectors["test"].send(f"<@{user.id}> welcome to test!")
+    if reaction.message.id == db["registry"] and not user.bot and str(user.id) not in db["players"].keys() and reaction.emoji[0].isdigit:
+        db["players"][str(user.id)] = reaction.emoji[0]
+        #await bot.get_channel(db["sectors"][reaction.emoji[0]]).send(f"{user.mention} welcome to sector {reaction.emoji[0]}!")
+        role = ctx.guild.get_role(db["sectors"][reaction.emoji[0]])
+        await bot.add_roles(user, role)
+        update_db()
 
 bot.run(os.getenv('TOKEN')) 
