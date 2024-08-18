@@ -1,6 +1,4 @@
-import os
-import discord
-import random
+import os, discord, random, json
 
 from discord.ext import commands
 from dotenv import load_dotenv, dotenv_values
@@ -21,30 +19,29 @@ dice = [4,6,8,10,12,20]
 async def setup_hook() -> None:  # This function is automatically called before the bot starts
     await bot.tree.sync()   # This function is used to sync the slash commands with Discord it is mandatory if you want to use slash commands
 
-<<<<<<< Updated upstream
-players = {}
-=======
-db = {}
+if os.path.exists("db.json"):
+    with open("db.json", "r") as f:
+        db = json.load(f)
+        players = db["players"]
+        stats = db["stats"]
+        ids = db["ids"]
+        sectors = db["sectors"]
+        registered_messages = db["registered_messages"]
+else:
+    with open("db.json", 'w') as file:
+        file.write("{players={},stats={},ids={},sectors={},registered_messages=[]}")
 
 def update_db():
     with open("db.json", 'w') as file:
-        json.dump(db, file, indent=4)
-
-if os.path.exists("db.json"):
-    with open("db.json", "r") as file:
-        db = json.load(file)
-else:
-    db = {"players":{},"stats":{},"ids":{},"sectors":{},"registry":[]}
-    update_db()
+        json.dump({'players'=players,'stats'=stats,'ids'=ids,'sectors'=sectors,'registered_messages'=registered_messages}, file, indent=4)
 
 '''players = {}
->>>>>>> Stashed changes
 stats = {}
 ids = {}
 
 sectors = {}
 
-registered_messages = []
+registered_messages = []'''
 
 #Delta: Added player class. Should be extensible enough.
 class Player:
@@ -56,7 +53,6 @@ class Player:
 
 @bot.event
 async def on_ready():
-<<<<<<< Updated upstream
     print(f'We have logged in as {bot.user}')
 
 @bot.hybrid_command()
@@ -84,19 +80,11 @@ async def start(ctx):
     sectors['test'] = bot.get_channel(1274370660226957342)
     sectors['test-2'] = bot.get_channel(1274388708073668720)
     sectors['test-3'] = bot.get_channel(1274388788092731434)
-=======
-    print(f'We have logged in as {client.user}')
-    channel = client.get_channel(1272746089555955758)
-    db["sectors"]['test'] = 1274370660226957342
-    db["sectors"]['test-2'] = 1274388708073668720
-    db["sectors"]['test-3'] = 1274388788092731434
->>>>>>> Stashed changes
 
     register_message = await channel.send("Please react to this message to be registed as a player!")
     await register_message.add_reaction(REACTION)
-    db["registry"].append(register_message.id)
+    registered_messages.append(register_message)
 
-<<<<<<< Updated upstream
 @bot.hybrid_command()
 @commands.has_role(staff)
 async def sectors(ctx):
@@ -106,20 +94,6 @@ async def sectors(ctx):
             grouped_data[value] = []
         grouped_data[value].append(key)
     #await message.channel.send(str(players))
-=======
-@client.event
-async def on_message(message):
-    if message.content.startswith('!list_sectors'):
-        dm_role = discord.utils.get(message.author.roles, name="D&D Staff")
-        if dm_role is None:
-            return
-        grouped_data = {}
-        for key, value in db["players"].items():
-            if value not in grouped_data:
-                grouped_data[value] = []
-            grouped_data[value].append(key)
-        #await message.channel.send(str(db["players"]))
->>>>>>> Stashed changes
 
     embed=discord.Embed(title="List")
     for value, keys in grouped_data.items():
@@ -129,7 +103,6 @@ async def on_message(message):
         embed.add_field(name=value, value=keys_str, inline=False)
     await message.channel.send(embed=embed)
     
-<<<<<<< Updated upstream
 @bot.hybrid_command()
 @commands.has_role(staff)
 async def move(ctx):
@@ -145,74 +118,6 @@ async def move(ctx):
             for sector in sectors:
                 if sector != msg[2]:
                     await sectors[sector].remove_user(user)
-=======
-    if message.content.startswith('!move'):
-        dm_role = discord.utils.get(message.author.roles, name="D&D Staff")
-        if dm_role is None:
-            return
-        msg = message.content.split()
-        if len(msg) < 3 or len(msg) > 3:
-           await message.channel.send("Incorrect usage! Should be: !move [player] [sector]")
-           return
-        elif len(msg) == 3: #msg[1] = user, msg[2] = sector | Delta: Useless elif statement, lol. 
-            if msg[1] in db["players"]:
-                db["players"][msg[1]] = msg[2]
-                await client.get_channel(db["sectors"][msg[2]]).send(f"<@{db["ids"][msg[1]]}> welcome to {msg[2]}!")
-                user = await client.fetch_user(db["ids"][msg[1]])
-                for sector in db["sectors"]:
-                    if sector != msg[2]:
-                        await client.get_channel(db["sectors"][sector]).remove_user(user)
-            else:
-                await message.channel.send("No such registered player found!")
-                print(msg[1])
-                update_db()
-                return
-                
-    if message.content.startswith('!register_stats'):
-        dm_role = discord.utils.get(message.author.roles, name="D&D Staff")
-        if dm_role is None:
-            return
-        msg = message.content.split()
-        if len(msg) < 5 or len(msg) > 5:
-            await message.channel.send("Incorrect usage! Should be: !register_stats [name] [strength] [speed] [defence]")
-            return
-        if msg[1] not in db["players"]:
-            await message.channel.send("This user is not playing!")
-            return
-        
-        new_player = Player(msg[1], msg[2], msg[3], msg[4])
-        db["stats"][msg[1]] = new_player
-        update_db()
-    
-    if message.content.startswith('!show_stats'):
-       dm_role = discord.utils.get(message.author.roles, name="D&D Staff")
-       if dm_role is None:
-            return
-       msg = message.content.split()
-       if len(msg) < 2 or len(msg) > 2:
-           await message.channel.send("Incorrect usage! Should be: !show_stats [name]")
-           return
-       try:
-            embed = discord.Embed(
-            title=msg[1] + "Stats:",
-            color=discord.Color.blue()
-            )
-            #embed.add_field(name=value, value=keys_str, inline=False)
-            embed.add_field(name="Strength", value=db["stats"][msg[1]].strength)
-            embed.add_field(name="Speed", value=db["stats"][msg[1]].speed)
-            embed.add_field(name="Defence", value=db["stats"][msg[1]].defence)
-            
-            await message.channel.send(embed=embed)
-       except KeyError:
-           await message.channel.send("No such player found!")
-           return
-    
-    if message.content.startswith('!roll'):
-        msg = message.content.split()
-        if len(msg) < 2 or len(msg) > 2 or int(msg[1]) not in [4,6,8,10,12,20]:
-            await message.channel.send("Incorrect usage! Should be: !roll [4,6,8,10,12,20]")
-            return
->>>>>>> Stashed changes
         else:
             await message.channel.send("No such registered player found!")
             print(msg[1])
@@ -271,10 +176,9 @@ async def roll(ctx, sides: Literal[tuple(dice)]):
 
 @bot.event
 async def on_reaction_add(reaction, user):
-    if reaction.message == db["registry"][0] and user.name not in db["players"]:
-        db["players"][user.name] = 'test'
-        db["ids"][user.name] = user.id
-        await client.get_channel(db["sectors"]["test"]).send(f"<@{user.id}> welcome to test!")
-    update_db()
+    if reaction.message == registered_messages[0] and user.name not in players:
+        players[user.name] = 'test'
+        ids[user.name] = user.id
+        await sectors["test"].send(f"<@{user.id}> welcome to test!")
 
 bot.run(os.getenv('TOKEN')) 
