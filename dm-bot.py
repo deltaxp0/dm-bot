@@ -1,21 +1,22 @@
-import os, discord, random
+import discord
+import random
 from dotenv import load_dotenv, dotenv_values
 
 intents = discord.Intents.default()
 intents.message_content = True
 
 client = discord.Client(intents=intents)
-load_dotenv()
 
 players = {}
 stats = {}
 ids = {}
 
 sectors = {}
-
+server = client.get_guild(1272746089224867921)
 registered_messages = []
 
-#Delta: Added player class. Should be extensible enough.
+# Delta: Added player class. Should be extensible enough.
+
 class Player:
     def __init__(self, name, class_name, str, dex, con, int, wis, cha):
         self.name = name
@@ -30,10 +31,10 @@ class Player:
 @client.event
 async def on_ready():
     print(f'We have logged in as {client.user}')
-    channel = client.get_channel(1272746089555955758)
-    sectors['test'] = client.get_channel(1274370660226957342)
-    sectors['test-2'] = client.get_channel(1274388708073668720)
-    sectors['test-3'] = client.get_channel(1274388788092731434)
+    server = client.get_guild(1272746089224867921)
+    sectors['sector-1'] = server.get_role(1274803528690438145)
+    sectors['sector-2'] = server.get_role(1274803583111663618)
+    sectors['sector-3'] = server.get_role(1274803643308052490)
 
 @client.event
 async def on_message(message):
@@ -54,17 +55,17 @@ async def on_message(message):
             if value not in grouped_data:
                 grouped_data[value] = []
             grouped_data[value].append(key)
-        #await message.channel.send(str(players))
+        # await message.channel.send(str(players))
 
-        embed=discord.Embed(title="List")
+        embed = discord.Embed(title="List")
         print(grouped_data)
         for value, keys in grouped_data.items():
-        # Join the keys into a single string, separated by a new line
+            # Join the keys into a single string, separated by a new line
             keys_str = "\n".join(keys)
         # Add a field to the embed
             embed.add_field(name=value, value=keys_str, inline=False)
         await message.channel.send(embed=embed)
-    
+
     if message.content.startswith('!move'):
         dm_role = discord.utils.get(message.author.roles, name="D&D Staff")
         if dm_role is None:
@@ -77,25 +78,33 @@ async def on_message(message):
         elif len(msg) == 3:
             if msg[1] in players:
                 if "<" not in msg[2]:
-                    players[msg[1]] = msg[2]
-                    await sectors[msg[2]].send(f"<@{ids[msg[1]]}> welcome to {msg[2]}!")
-                    user = await client.fetch_user(ids[msg[1]])
+                    user = await message.guild.fetch_member(ids[msg[1]])
                     for sector in sectors:
-                        if sector != msg[2]:
-                            await sectors[sector].remove_user(user)
+                        await user.remove_roles(sectors[sector])
+                    
+                    try:
+                        await user.add_roles(sectors[msg[2]])
+                        players[msg[1]] = msg[2]
+                        await message.channel.send(f"{msg[1]} moved to {msg[2]}")
+                    except:
+                        await message.channel.send("Error! No such sector!")
+                        return
                 else:
                     msg[2] = msg[2].replace('<', ''); msg[2] = msg[2].replace('>', ''); msg[2] = msg[2].replace('#', '')
                     grouped_data = {}
                     sector_key = int(msg[2])
                     channel_to_ping = client.get_channel(sector_key)
-                    sectors[str(channel_to_ping)] = client.get_channel(sector_key)
-                    players[msg[1]] = str(channel_to_ping)
-                    await sectors[str(channel_to_ping)].send(f"<@{ids[msg[1]]}> welcome to {str(channel_to_ping)}!")
-                    user = await client.fetch_user(ids[msg[1]])
-                    for sector in sectors:
-                        if sector != str(channel_to_ping):
-                            await sectors[sector].remove_user(user)
 
+                    user = await message.guild.fetch_member(ids[msg[1]])
+                    for sector in sectors:
+                        await user.remove_roles(sectors[sector])
+                    try:
+                        await user.add_roles(sectors[channel_to_ping])
+                        players[msg[1]] = str(channel_to_ping)
+                        await message.channel.send(f"{msg[1]} moved to {channel_to_ping}")
+                    except:
+                        await message.channel.send("Error! No such sector!")
+                        return
             elif "<" in msg[1]:
                 msg[1].replace('<', '')
                 msg[1].replace('>', '')
@@ -109,25 +118,34 @@ async def on_message(message):
                 for value, keys in grouped_data.items():
                     keys_str = "\n".join(keys)
                 if "<" not in msg[2]:
-                    players[player_key] = msg[2]
-                    await sectors[msg[2]].send(f"<@{ids[player_key]}> welcome to {msg[2]}!")
-                    user = await client.fetch_user(ids[player_key])
+                    user = await message.guild.fetch_member(ids[player_key])
                     for sector in sectors:
-                        if sector != msg[2]:
-                            await sectors[sector].remove_user(user)
+                        await user.remove_roles(sectors[sector])
+                    try:
+                        await user.add_roles(sectors[msg[2]])
+                        await message.channel.send(f"{msg[1]} moved to {msg[2]}")
+                        players[player_key] = msg[2]
+                    except:
+                        await message.channel.send("Error! No such role!")
                 else:
                     msg[2] = msg[2].replace('<', ''); msg[2] = msg[2].replace('>', ''); msg[2] = msg[2].replace('#', '')
                     grouped_data = {}
                     sector_key = int(msg[2])
                     channel_to_ping = client.get_channel(sector_key)
-                    sectors[str(channel_to_ping)] = client.get_channel(sector_key)
-                    players[player_key] = str(channel_to_ping)
-                    await sectors[str(channel_to_ping)].send(f"<@{ids[player_key]}> welcome to {str(channel_to_ping)}!")
-                    user = await client.fetch_user(ids[player_key])
-                    for sector in sectors:
-                        if sector != str(channel_to_ping):
-                            await sectors[sector].remove_user(user)
 
+                    user = await message.guild.fetch_member(ids[player_key])
+                    for sector in sectors:
+                        await user.remove_roles(sectors[sector])
+
+                    try:
+                        await user.add_roles(sectors[str(channel_to_ping)])
+                        players[player_key] = str(channel_to_ping)
+                        await message.channel.send(f"{msg[1]} moved to {str(channel_to_ping)}")
+                    except:
+                        await message.channel.send("Error! No sector like that exists!")
+                        return
+                    
+                    
     if message.content.startswith('!register'):
         dm_role = discord.utils.get(message.author.roles, name="D&D Staff")
         if dm_role is None:
@@ -139,10 +157,10 @@ async def on_message(message):
         if msg[1] not in players:
             await message.channel.send("This user is not playing!")
             return
-        
+
         new_player = Player(msg[1], msg[2], msg[3], msg[4])
         stats[msg[1]] = new_player
-    
+
     if message.content.startswith('!stats'):
         dm_role = discord.utils.get(message.author.roles, name="D&D Staff")
         if dm_role is None:
@@ -195,35 +213,35 @@ async def on_message(message):
             embed.add_field(name="Cha", value=stats[player_key].cha)
 
             await message.channel.send(embed=embed)
-    
+
     if message.content.startswith('!roll'):
         msg = message.content.split()
-        if len(msg) < 2 or len(msg) > 2 or int(msg[1]) not in [4,6,8,10,12,20]:
+        if len(msg) < 2 or len(msg) > 2 or int(msg[1]) not in [4, 6, 8, 10, 12, 20]:
             await message.channel.send("Incorrect usage! Should be: !roll [4,6,8,10,12,20]")
             return
         else:
             sides = int(msg[1])
             embed = discord.Embed(
-            title=msg[1] + "Dices:",
-            color=discord.Color.blurple()
+                title=msg[1] + "Dices:",
+                color=discord.Color.blurple()
             )
-            #roll 6 times
+            # roll 6 times
             for i in range(6):
-                embed.add_field(name="Dice " + str(i+1), value=str(random.randint(1, sides) + 12))
+                embed.add_field(name="Dice " + str(i+1),
+                                value=str(random.randint(1, sides) + 12))
             await message.channel.send(embed=embed)
-           
+
 @client.event
 async def on_reaction_add(reaction, user):
     if reaction.message == registered_messages[0] and user.name not in players:
+        for sector in sectors:
+            await user.remove_roles(sectors[sector])
+        print(user)
         ids[user.name] = user.id
         my_sector = random.choice(list(sectors.keys()))
         players[user.name] = sectors[my_sector]
-        await sectors[my_sector].send(f"<@{user.id}> welcome to {sectors[my_sector]}!")
-        for sector in sectors:
-            if sector != my_sector:
-                await sectors[sector].remove_user(user)
-        
-        #Stats section
+        await user.add_roles(sectors[my_sector])
+        # Stats section
         sides = 4
         statistics = []
         for _ in range(6):
@@ -250,6 +268,5 @@ async def on_reaction_add(reaction, user):
             case '🧙‍♂️':
                 stats[user.name] = Player(user.name, "Wizard", statistics[3], statistics[1],
                                           statistics[2], statistics[5], statistics[4], statistics[0])
-        
 
 client.run(os.getenv('TOKEN'))
