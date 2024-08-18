@@ -48,6 +48,7 @@ async def ping(ctx):
 @bot.hybrid_command()
 async def sync(ctx):
     bot.setup_hook = setup_hook
+    await ctx.send("synced")
 
 async def parseUser(guild, user):
     user = user.strip("<@")
