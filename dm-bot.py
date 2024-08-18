@@ -71,9 +71,10 @@ async def on_message(message):
             return
         msg = message.content.split()
         if len(msg) < 3 or len(msg) > 3:
-           await message.channel.send("Incorrect usage! Should be: !move [player] [sector]")
-           return
-        elif len(msg) == 3: #msg[1] = user, msg[2] = sector | Delta: Useless elif statement, lol. 
+            await message.channel.send("Incorrect usage! Should be: !move [player] [sector]")
+            return
+        # msg[1] = user, msg[2] = sector | Delta: Useless elif statement, lol.
+        elif len(msg) == 3:
             if msg[1] in players:
                 players[msg[1]] = msg[2]
                 await sectors[msg[2]].send(f"<@{ids[msg[1]]}> welcome to {msg[2]}!")
@@ -81,10 +82,24 @@ async def on_message(message):
                 for sector in sectors:
                     if sector != msg[2]:
                         await sectors[sector].remove_user(user)
-            else:
-                await message.channel.send("No such registered player found!")
-                print(msg[1])
-                return
+            elif "<" in msg[1]:
+                msg[1].replace('<', '')
+                msg[1].replace('>', '')
+                msg[1].replace('@', '')
+                grouped_data = {}
+                for key, value in ids.items():
+                    if value not in grouped_data:
+                        grouped_data[value] = []
+                        grouped_data[value].append(key)
+                player_key = grouped_data[value][0]
+                for value, keys in grouped_data.items():
+                    keys_str = "\n".join(keys)
+                players[player_key] = msg[2]
+                await sectors[msg[2]].send(f"<@{ids[player_key]}> welcome to {msg[2]}!")
+                user = await client.fetch_user(ids[player_key])
+                for sector in sectors:
+                    if sector != msg[2]:
+                        await sectors[sector].remove_user(user)
 
     if message.content.startswith('!register'):
         dm_role = discord.utils.get(message.author.roles, name="D&D Staff")
@@ -102,27 +117,57 @@ async def on_message(message):
         stats[msg[1]] = new_player
     
     if message.content.startswith('!stats'):
-       dm_role = discord.utils.get(message.author.roles, name="D&D Staff")
-       if dm_role is None:
+        dm_role = discord.utils.get(message.author.roles, name="D&D Staff")
+        if dm_role is None:
             return
-       msg = message.content.split()
-       if len(msg) < 2 or len(msg) > 2:
-           await message.channel.send("Incorrect usage! Should be: !show_stats [name]")
-           return
-       try:
+        msg = message.content.split()
+        if len(msg) < 2 or len(msg) > 2:
+            await message.channel.send("Incorrect usage! Should be: !show_stats [name]")
+            return
+        if msg[1] in stats:
             embed = discord.Embed(
-            title=msg[1] + "Stats:",
-            color=discord.Color.blue()
+                title=msg[1] + "Stats:",
+                color=discord.Color.blue()
             )
-            #embed.add_field(name=value, value=keys_str, inline=False)
-            embed.add_field(name="Strength", value=stats[msg[1]].strength)
-            embed.add_field(name="Speed", value=stats[msg[1]].speed)
-            embed.add_field(name="Defence", value=stats[msg[1]].defence)
-            
+            embed.add_field(name="Name", value=stats[player_key].name)
+            embed.add_field(name="Class", value=stats[player_key].class_name)
+            embed.add_field(name="Str", value=stats[player_key].str)
+            embed.add_field(name="Dex", value=stats[player_key].dex)
+            embed.add_field(name="Con", value=stats[player_key].con)
+            embed.add_field(name="Int", value=stats[player_key].int)
+            embed.add_field(name="Wis", value=stats[player_key].wis)
+            embed.add_field(name="Cha", value=stats[player_key].cha)
+
             await message.channel.send(embed=embed)
-       except KeyError:
-           await message.channel.send("No such player found!")
-           return
+        elif "<" in msg[1]:
+            msg[1].replace('<', '')
+            msg[1].replace('>', '')
+            msg[1].replace('@', '')
+            grouped_data = {}
+            for key, value in ids.items():
+                if value not in grouped_data:
+                    grouped_data[value] = []
+                    grouped_data[value].append(key)
+            player_key = grouped_data[value][0]
+            for value, keys in grouped_data.items():
+                keys_str = "\n".join(keys)
+
+            embed = discord.Embed(
+                title="Stats:",
+                color=discord.Color.blue()
+            )
+
+            # name, class_name, str, dex, con, int, wis, cha
+            embed.add_field(name="Name", value=stats[player_key].name)
+            embed.add_field(name="Class", value=stats[player_key].class_name)
+            embed.add_field(name="Str", value=stats[player_key].str)
+            embed.add_field(name="Dex", value=stats[player_key].dex)
+            embed.add_field(name="Con", value=stats[player_key].con)
+            embed.add_field(name="Int", value=stats[player_key].int)
+            embed.add_field(name="Wis", value=stats[player_key].wis)
+            embed.add_field(name="Cha", value=stats[player_key].cha)
+
+            await message.channel.send(embed=embed)
     
     if message.content.startswith('!roll'):
         msg = message.content.split()
