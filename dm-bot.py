@@ -40,14 +40,6 @@ class Player:
 @bot.event
 async def on_ready():
     print(f'We have logged in as {bot.user}')
-    channel = bot.get_channel(1272746089555955758)
-    sectors['test'] = bot.get_channel(1274370660226957342)
-    sectors['test-2'] = bot.get_channel(1274388708073668720)
-    sectors['test-3'] = bot.get_channel(1274388788092731434)
-
-    register_message = await channel.send("Please react to this message to be registed as a player!")
-    await register_message.add_reaction(REACTION)
-    registered_messages.append(register_message)
 
 @bot.hybrid_command()
 async def ping(ctx):
@@ -66,6 +58,17 @@ async def parseUser(guild, user):
             return None
     else:
         return discord.utils.get(guild.members, name=user)
+
+@bot.hybrid_command()
+@commands.has_role(staff)
+async def start(ctx):
+    sectors['test'] = bot.get_channel(1274370660226957342)
+    sectors['test-2'] = bot.get_channel(1274388708073668720)
+    sectors['test-3'] = bot.get_channel(1274388788092731434)
+
+    register_message = await channel.send("Please react to this message to be registed as a player!")
+    await register_message.add_reaction(REACTION)
+    registered_messages.append(register_message)
 
 @bot.hybrid_command()
 @commands.has_role(staff)
