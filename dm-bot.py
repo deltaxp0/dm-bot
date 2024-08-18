@@ -21,7 +21,7 @@ else:
 
 def update_db():
     with open("db.json", 'w') as file:
-        json.dump({'players'=players,'stats'=stats,'ids'=ids,'sectors'=sectors,'registered_messages'=registered_messages}, file, indent=4)
+        json.dump({'players':players,'stats':stats,'ids':ids,'sectors':sectors,'registered_messages':registered_messages}, file, indent=4)
 
 '''players = {}
 stats = {}
