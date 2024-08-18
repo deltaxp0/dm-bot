@@ -1,7 +1,4 @@
-import os
-import discord
-import random
-
+import os, discord, random
 from dotenv import load_dotenv, dotenv_values
 
 intents = discord.Intents.default()
@@ -38,16 +35,17 @@ async def on_ready():
     sectors['test-2'] = client.get_channel(1274388708073668720)
     sectors['test-3'] = client.get_channel(1274388788092731434)
 
-    register_message = await channel.send("Please react to this message to be registed as a player!")
-    await register_message.add_reaction('💀')
-    await register_message.add_reaction('🧢')
-    await register_message.add_reaction('🔥')
-    await register_message.add_reaction('🧙‍♂️')
-    registered_messages.append(register_message)
-
 @client.event
 async def on_message(message):
-    if message.content.startswith('!list_sectors'):
+    if message.content.startswith('!newgame'):
+        register_message = await message.channel.send("Please react to this message to be registed as a player!")
+        await register_message.add_reaction('💀')
+        await register_message.add_reaction('🧢')
+        await register_message.add_reaction('🔥')
+        await register_message.add_reaction('🧙‍♂️')
+        registered_messages.append(register_message)
+
+    if message.content.startswith('!sectors'):
         dm_role = discord.utils.get(message.author.roles, name="D&D Staff")
         if dm_role is None:
             return
@@ -87,7 +85,8 @@ async def on_message(message):
                 await message.channel.send("No such registered player found!")
                 print(msg[1])
                 return
-    if message.content.startswith('!register_stats'):
+
+    if message.content.startswith('!register'):
         dm_role = discord.utils.get(message.author.roles, name="D&D Staff")
         if dm_role is None:
             return
@@ -102,7 +101,7 @@ async def on_message(message):
         new_player = Player(msg[1], msg[2], msg[3], msg[4])
         stats[msg[1]] = new_player
     
-    if message.content.startswith('!show_stats'):
+    if message.content.startswith('!stats'):
        dm_role = discord.utils.get(message.author.roles, name="D&D Staff")
        if dm_role is None:
             return
