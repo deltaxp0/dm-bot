@@ -76,12 +76,26 @@ async def on_message(message):
         # msg[1] = user, msg[2] = sector | Delta: Useless elif statement, lol.
         elif len(msg) == 3:
             if msg[1] in players:
-                players[msg[1]] = msg[2]
-                await sectors[msg[2]].send(f"<@{ids[msg[1]]}> welcome to {msg[2]}!")
-                user = await client.fetch_user(ids[msg[1]])
-                for sector in sectors:
-                    if sector != msg[2]:
-                        await sectors[sector].remove_user(user)
+                if "<" not in msg[2]:
+                    players[msg[1]] = msg[2]
+                    await sectors[msg[2]].send(f"<@{ids[msg[1]]}> welcome to {msg[2]}!")
+                    user = await client.fetch_user(ids[msg[1]])
+                    for sector in sectors:
+                        if sector != msg[2]:
+                            await sectors[sector].remove_user(user)
+                else:
+                    msg[2] = msg[2].replace('<', ''); msg[2] = msg[2].replace('>', ''); msg[2] = msg[2].replace('#', '')
+                    grouped_data = {}
+                    sector_key = int(msg[2])
+                    channel_to_ping = client.get_channel(sector_key)
+                    sectors[str(channel_to_ping)] = client.get_channel(sector_key)
+                    players[msg[1]] = str(channel_to_ping)
+                    await sectors[str(channel_to_ping)].send(f"<@{ids[msg[1]]}> welcome to {str(channel_to_ping)}!")
+                    user = await client.fetch_user(ids[msg[1]])
+                    for sector in sectors:
+                        if sector != str(channel_to_ping):
+                            await sectors[sector].remove_user(user)
+
             elif "<" in msg[1]:
                 msg[1].replace('<', '')
                 msg[1].replace('>', '')
@@ -94,12 +108,25 @@ async def on_message(message):
                 player_key = grouped_data[value][0]
                 for value, keys in grouped_data.items():
                     keys_str = "\n".join(keys)
-                players[player_key] = msg[2]
-                await sectors[msg[2]].send(f"<@{ids[player_key]}> welcome to {msg[2]}!")
-                user = await client.fetch_user(ids[player_key])
-                for sector in sectors:
-                    if sector != msg[2]:
-                        await sectors[sector].remove_user(user)
+                if "<" not in msg[2]:
+                    players[player_key] = msg[2]
+                    await sectors[msg[2]].send(f"<@{ids[player_key]}> welcome to {msg[2]}!")
+                    user = await client.fetch_user(ids[player_key])
+                    for sector in sectors:
+                        if sector != msg[2]:
+                            await sectors[sector].remove_user(user)
+                else:
+                    msg[2] = msg[2].replace('<', ''); msg[2] = msg[2].replace('>', ''); msg[2] = msg[2].replace('#', '')
+                    grouped_data = {}
+                    sector_key = int(msg[2])
+                    channel_to_ping = client.get_channel(sector_key)
+                    sectors[str(channel_to_ping)] = client.get_channel(sector_key)
+                    players[player_key] = str(channel_to_ping)
+                    await sectors[str(channel_to_ping)].send(f"<@{ids[player_key]}> welcome to {str(channel_to_ping)}!")
+                    user = await client.fetch_user(ids[player_key])
+                    for sector in sectors:
+                        if sector != str(channel_to_ping):
+                            await sectors[sector].remove_user(user)
 
     if message.content.startswith('!register'):
         dm_role = discord.utils.get(message.author.roles, name="D&D Staff")
