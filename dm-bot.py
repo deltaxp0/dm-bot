@@ -225,10 +225,10 @@ async def on_reaction_add(reaction, user):
         
         #Stats section
         sides = 4
-        stats = []
+        statistics = []
         for _ in range(6):
-            stats.append(random.randint(1, sides) + 12)
-        
+            statistics.append(random.randint(1, sides) + 12)
+
         # name, class_name, Str = 0, Dex = 1, Con = 2, Int = 3, Wis = 4, Cha = 5
 
         # fighter:  Str, Dex, Con, Cha, Wis, Int [0, 1, 2, 5, 4, 3]
@@ -236,16 +236,20 @@ async def on_reaction_add(reaction, user):
         # cleric:   Wis, Con, Str, Dex, Cha, Int [4, 2, 0, 1, 5, 3]
         # wizard:   Int, Dex, Con, Cha, Wis, Str [3, 1, 2, 5, 4, 0]
 
-        stats.sort(reverse=True)
+        statistics.sort(reverse=True)
         match reaction.emoji:
             case '⚔️':
-                stats[user.name] = Player(user.name, "Fighter", stats[0], stats[1], stats[2], stats[5], stats[4], stats[3])
+                stats[user.name] = Player(user.name, "Fighter", statistics[0], statistics[1],
+                                          statistics[2], statistics[5], statistics[4], statistics[3])
             case '🗡️':
-                stats[user.name] = Player(user.name, "Rogue", stats[1], stats[0], stats[2], stats[4], stats[3], stats[5])
+                stats[user.name] = Player(user.name, "Rogue", statistics[1], statistics[0],
+                                          statistics[2], statistics[4], statistics[3], statistics[5])
             case '🍾':
-                stats[user.name] = Player(user.name, "Cleric", stats[4], stats[2], stats[0], stats[1], stats[5], stats[3])
+                stats[user.name] = Player(user.name, "Cleric", statistics[4], statistics[2],
+                                          statistics[0], statistics[1], statistics[5], statistics[3])
             case '🧙‍♂️':
-                stats[user.name] = Player(user.name, "Wizard", stats[3], stats[1], stats[2], stats[5], stats[4], stats[0])
+                stats[user.name] = Player(user.name, "Wizard", statistics[3], statistics[1],
+                                          statistics[2], statistics[5], statistics[4], statistics[0])
         
 
 client.run(os.getenv('TOKEN'))
