@@ -31,11 +31,22 @@ def reset_db():
 if os.path.exists("db.json"):
     with open("db.json", "r") as file:
         db = json.load(file)
+        db["stats"] = {int(k): v for k, v in db["stats"].items()}
 else:
     reset_db()
 
 def Player(name, class_name, sect, str, dex, con, int, wis, cha):
-    return {"Name": name, "Class": class_name, "Sector": sect, "Strength": str, "Dexterity": dex, "Constitution": con, "Intelligence": int, "Wisdom": wis, "Charisma": cha}
+    return {
+        "Name": name,
+        "Class": class_name,
+        "Sector": sect,
+        "Strength": str,
+        "Dexterity": dex,
+        "Constitution": con,
+        "Intelligence": int,
+        "Wisdom": wis,
+        "Charisma": cha
+    }
 
 @bot.event
 async def on_ready():
@@ -61,7 +72,7 @@ async def sectors(ctx):
         value = db["stats"][key]["Sector"]
         if value not in grouped_data:
             grouped_data[value] = []
-        grouped_data[value].append(key)
+        grouped_data[value].append(db["stats"][key]["Name"])
     
     grouped_data = dict(sorted(grouped_data.items()))
     
@@ -74,13 +85,13 @@ async def sectors(ctx):
 @bot.hybrid_command()
 @commands.has_role("D&D Staff")
 async def move(ctx, user: discord.User, sector: discord.TextChannel):
-    if user.name in db["stats"].keys():
+    if user.id in db["stats"]:
         member = await ctx.guild.fetch_member(user.id)
         for role in sector_list.values():
             await member.remove_roles(ctx.guild.get_role(role))
         try:
             await member.add_roles(ctx.guild.get_role(sector_list[sector.name]))
-            db["stats"][user.name]["Sector"] = sector.name
+            db["stats"][user.id]["Sector"] = sector.name
             await ctx.send(f"{user.name} moved to {sector.name}")
         except KeyError:
             await ctx.send("Error! No such sector!")
@@ -91,12 +102,12 @@ async def move(ctx, user: discord.User, sector: discord.TextChannel):
 @bot.hybrid_command()
 @commands.has_role("D&D Staff")
 async def register(ctx, user: discord.User, class_name: str, sector: discord.TextChannel, str_stat: int, dex_stat: int, con_stat: int, int_stat: int, wis_stat: int, cha_stat: int):
-    if user.name not in db["stats"].keys():
-        await ctx.send("This user is not playing!")
+    if user.id in db["stats"]:
+        await ctx.send("This user is already registered!")
         return
 
-    new_player = Player(user.name, class_name, sector.name, str_stat, dex_stat, con_stat, int_stat, wis_stat, cha_stat)
-    db["stats"][user.name] = new_player
+    new_player = Player(user.id, user.name, class_name, sector.name, str_stat, dex_stat, con_stat, int_stat, wis_stat, cha_stat)
+    db["stats"][user.id] = new_player
     await ctx.send(f"Player {user.name} has been registered with the stats provided.")
     update_db()
 
@@ -105,10 +116,11 @@ async def register(ctx, user: discord.User, class_name: str, sector: discord.Tex
 async def stats(ctx, user: discord.User=None):
     if not user:
         user = ctx.author
-    if user.name in db["stats"].keys():
+    if user.id in db["stats"]:
         embed = discord.Embed(title=f"{user.name}'s Stats:", color=discord.Color.blue())
-        for key, value in db["stats"][str(user.name)].items():
-            embed.add_field(name=key, value=value)
+        for key, value in db["stats"][user.id].items():
+            if key != "User ID":
+                embed.add_field(name=key, value=value)
 
         await ctx.send(embed=embed)
     else:
@@ -127,7 +139,7 @@ async def roll(ctx, sides: int=None):
 
 @bot.event
 async def on_reaction_add(reaction, user):
-    if reaction.message.id in db["registry"] and user.name not in db["stats"].keys():
+    if reaction.message.id in db["registry"] and user.id not in db["stats"]:
         member = await reaction.message.guild.fetch_member(user.id)
         for role in sector_list.values():
             await member.remove_roles(reaction.message.guild.get_role(role))
@@ -143,13 +155,13 @@ async def on_reaction_add(reaction, user):
         statistics.sort(reverse=True)
         match reaction.emoji.name:
             case "fighter":
-                db["stats"][user.name] = Player(user.name, "Fighter", my_sector, statistics[0], statistics[1], statistics[2], statistics[5], statistics[4], statistics[3])
+                db["stats"][user.id] = Player(user.name, "Fighter", my_sector, statistics[0], statistics[1], statistics[2], statistics[5], statistics[4], statistics[3])
             case "rogue":
-                db["stats"][user.name] = Player(user.name, "Rogue", my_sector, statistics[1], statistics[0], statistics[2], statistics[4], statistics[3], statistics[5])
+                db["stats"][user.id] = Player(user.name, "Rogue", my_sector, statistics[1], statistics[0], statistics[2], statistics[4], statistics[3], statistics[5])
             case "cleric":
-                db["stats"][user.name] = Player(user.name, "Cleric", my_sector, statistics[4], statistics[2], statistics[0], statistics[1], statistics[5], statistics[3])
+                db["stats"][user.id] = Player(user.name, "Cleric", my_sector, statistics[4], statistics[2], statistics[0], statistics[1], statistics[5], statistics[3])
             case "wizard":
-                db["stats"][user.name] = Player(user.name, "Wizard", my_sector, statistics[3], statistics[1], statistics[2], statistics[5], statistics[4], statistics[0])
+                db["stats"][user.id] = Player(user.name, "Wizard", my_sector, statistics[3], statistics[1], statistics[2], statistics[5], statistics[4], statistics[0])
     update_db()
 
 @bot.hybrid_command()
