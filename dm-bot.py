@@ -168,7 +168,19 @@ async def on_reaction_add(reaction, user):
         if reaction.message.guild.get_role(db["stats"][user.id]['Sector']) not in member.roles:
             await member.add_roles(reaction.message.guild.get_role(sector_list[db["stats"][user.id]['Sector']]))
     update_db()
-
+# Rasty: added assign command to sync roles with the db
+@bot.hybrid_command()
+@commands.has_role("Coding Department")
+async def assign(ctx):
+    db["stats"] = {int(k): v for k, v in db["stats"].items()}    
+    for k, v in db["stats"].items():
+        member = await ctx.guild.fetch_member(k)
+        for role in sector_list.values():
+            if role in [r.id for r in member.roles]:
+                await member.remove_roles(ctx.guild.get_role(role))
+        await member.add_roles(ctx.guild.get_role(sector_list[v["Sector"]]))
+        
+        
 @bot.hybrid_command()
 @commands.has_role("Coding Department")
 async def stop(ctx):
