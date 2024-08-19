@@ -120,12 +120,16 @@ async def stats(ctx, user: discord.User=None):
         embed = discord.Embed(title=f"{user.name}'s Stats:", color=discord.Color.blue())
         for key, value in db["stats"][user.id].items():
             if key != "User ID":
-                embed.add_field(name=key, value=value)
+                if key != "Sector":
+                    embed.add_field(name=key, value=value)
+                elif key == "Sector":
+                    channel = discord.utils.get(ctx.guild.channels, name=db["stats"][user.id]["Sector"])
+                    embed.add_field(name="Sector", value=f"<#{channel.id}>")
 
         await ctx.send(embed=embed)
     else:
         await ctx.send("No stats found for this user!")
-
+    
 @bot.hybrid_command()
 async def roll(ctx, sides: int=None):
     if not sides or sides not in [4, 6, 8, 10, 12, 20]:
@@ -163,10 +167,10 @@ async def on_reaction_add(reaction, user):
                 db["stats"][user.id] = Player(user.name, "Cleric", my_sector, statistics[4], statistics[2], statistics[0], statistics[1], statistics[5], statistics[3])
             case "wizard":
                 db["stats"][user.id] = Player(user.name, "Wizard", my_sector, statistics[3], statistics[1], statistics[2], statistics[5], statistics[4], statistics[0])
-    elif user.id in db["stats"]:
+    '''elif user.id in db["stats"]:
         member = await reaction.message.guild.fetch_member(user.id)
         if reaction.message.guild.get_role(db["stats"][user.id]['Sector']) not in member.roles:
-            await member.add_roles(reaction.message.guild.get_role(sector_list[db["stats"][user.id]['Sector']]))
+            await member.add_roles(reaction.message.guild.get_role(sector_list[db["stats"][user.id]['Sector']]))'''
     update_db()
 # Rasty: added assign command to sync roles with the db
 @bot.hybrid_command()
