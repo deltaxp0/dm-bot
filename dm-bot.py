@@ -142,7 +142,8 @@ async def on_reaction_add(reaction, user):
     if reaction.message.id in db["registry"] and user.id not in db["stats"]:
         member = await reaction.message.guild.fetch_member(user.id)
         for role in sector_list.values():
-            await member.remove_roles(reaction.message.guild.get_role(role))
+            if role in member.roles:
+                await member.remove_roles(reaction.message.guild.get_role(role))
 
         my_sector = random.choice(list(sector_list.keys()))
         await member.add_roles(reaction.message.guild.get_role(sector_list[my_sector]))
@@ -162,6 +163,10 @@ async def on_reaction_add(reaction, user):
                 db["stats"][user.id] = Player(user.name, "Cleric", my_sector, statistics[4], statistics[2], statistics[0], statistics[1], statistics[5], statistics[3])
             case "wizard":
                 db["stats"][user.id] = Player(user.name, "Wizard", my_sector, statistics[3], statistics[1], statistics[2], statistics[5], statistics[4], statistics[0])
+    elif user.id in db["stats"]:
+        member = await reaction.message.guild.fetch_member(user.id)
+        if reaction.message.guild.get_role(db["stats"][user.id]['Sector']) not in member.roles:
+            await member.add_roles(reaction.message.guild.get_role(sector_list[db["stats"][user.id]['Sector']]))
     update_db()
 
 @bot.hybrid_command()
