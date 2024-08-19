@@ -3,11 +3,13 @@ from discord.ext import commands
 from dotenv import load_dotenv, dotenv_values
 
 intents = discord.Intents.default()
+intents.messages = True
+intents.guilds = True
 intents.message_content = True
 
 load_dotenv()
 
-bot = commands.Bot(command_prefix="!", intents=intents)
+bot = commands.Bot(command_prefix=".", intents=intents)
 
 client = discord.Client(intents=intents)
 
@@ -120,11 +122,11 @@ async def stats(ctx, user: discord.User=None):
         embed = discord.Embed(title=f"{user.name}'s Stats:", color=discord.Color.blue())
         for key, value in db["stats"][user.id].items():
             if key != "User ID":
-                if key != "Sector":
-                    embed.add_field(name=key, value=value)
-                elif key == "Sector":
+                if key == "Sector":
                     channel = discord.utils.get(ctx.guild.channels, name=db["stats"][user.id]["Sector"])
                     embed.add_field(name="Sector", value=f"<#{channel.id}>")
+                else:
+                    embed.add_field(name=key, value=value)
 
         await ctx.send(embed=embed)
     else:
@@ -140,7 +142,7 @@ async def roll(ctx, sides: int=None):
         for i in range(6):
             embed.add_field(name=f"Dice {i+1}", value=str(random.randint(1, sides) + 12))
         await ctx.send(embed=embed)
-
+        
 @bot.event
 async def on_reaction_add(reaction, user):
     if reaction.message.id in db["registry"] and user.id not in db["stats"]:
@@ -183,8 +185,78 @@ async def assign(ctx):
             if role in [r.id for r in member.roles]:
                 await member.remove_roles(ctx.guild.get_role(role))
         await member.add_roles(ctx.guild.get_role(sector_list[v["Sector"]]))
-        
-        
+
+class CharacterButton(discord.ui.Button):
+    def __init__(self, character_name, stats):
+        super().__init__(label=character_name, style=discord.ButtonStyle.gray)
+        self.character_name = character_name
+        self.stats = stats
+
+    async def callback(self, interaction: discord.Interaction):
+        user = interaction.user
+        if user.id not in db["stats"]:
+            member = await interaction.guild.fetch_member(user.id)
+
+            # Remove existing roles
+            for role in sector_list.values():
+                if role in member.roles:
+                    await member.remove_roles(interaction.guild.get_role(role))
+
+            # Assign a new sector
+            my_sector = random.choice(list(sector_list.keys()))
+            await member.add_roles(interaction.guild.get_role(sector_list[my_sector]))
+
+            # Register the player in the database
+            db["stats"][user.id] = Player(user.name, self.character_name, my_sector, *self.stats)
+
+            await interaction.response.send_message(f"You have chosen {self.character_name}!", ephemeral=True)
+            update_db()
+        else:
+            await interaction.response.send_message("You are already registered.", ephemeral=True)
+
+class CharacterSelectionView(discord.ui.View):
+    def __init__(self, character_arrangement):
+        super().__init__()
+        for key, value in character_arrangement.items():
+            self.add_item(CharacterButton(value["class"], value["stats"]))
+            
+@bot.hybrid_command()
+@commands.has_role("Coding Department")
+async def btn(ctx):
+    sides = 4
+    statistics = [random.randint(1, sides) + 12 for _ in range(6)]
+    statistics.sort(reverse=True)
+
+    character_arrangement = {
+        "fighter": {
+            "class": "Fighter",
+            "stats": [statistics[0], statistics[1], statistics[2], statistics[5], statistics[4], statistics[3]]
+        },
+        "rogue": {
+            "class": "Rogue",
+            "stats": [statistics[1], statistics[0], statistics[2], statistics[4], statistics[3], statistics[5]]
+        },
+        "cleric": {
+            "class": "Cleric",
+            "stats": [statistics[4], statistics[2], statistics[0], statistics[1], statistics[5], statistics[3]]
+        },
+        "wizard": {
+            "class": "Wizard",
+            "stats": [statistics[3], statistics[1], statistics[2], statistics[5], statistics[4], statistics[0]]
+        }
+    }
+
+    embed = discord.Embed(title="Character Selection", color=discord.Color.blue())
+    embed.add_field(name="\u200b", value="Choose your character:", inline=False)
+    for key, value in character_arrangement.items():
+        embed.add_field(name="\u200b", value=value['class'], inline=False)
+
+    view = CharacterSelectionView(character_arrangement)
+    
+    register_message = await ctx.send(embed=embed, view=view)
+    db["registry"].append(register_message.id)
+    update_db()
+
 @bot.hybrid_command()
 @commands.has_role("Coding Department")
 async def stop(ctx):
@@ -202,6 +274,6 @@ async def reset(ctx):
 @bot.hybrid_command()
 @commands.has_role("Coding Department")
 async def data(ctx):
-    await ctx.send(f"```{db}```")
+    await ctx.send(f"```json\n{json.dumps(db, indent=2)}```")
 
 bot.run(os.getenv('TOKEN'))
