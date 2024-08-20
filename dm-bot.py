@@ -187,28 +187,21 @@ async def assign(ctx):
         await member.add_roles(ctx.guild.get_role(sector_list[v["Sector"]]))
 
 class CharacterButton(discord.ui.Button):
-    def __init__(self, character_name, stats):
-        super().__init__(label=character_name, style=discord.ButtonStyle.gray)
-        self.character_name = character_name
+    def __init__(self, character_name, stats, color):
+        super().__init__(label=character_name, style=color)
         self.stats = stats
-
+        self.character_name = character_name
     async def callback(self, interaction: discord.Interaction):
         user = interaction.user
         if user.id not in db["stats"]:
             member = await interaction.guild.fetch_member(user.id)
-
-            # Remove existing roles
             for role in sector_list.values():
                 if role in member.roles:
                     await member.remove_roles(interaction.guild.get_role(role))
 
-            # Assign a new sector
             my_sector = random.choice(list(sector_list.keys()))
             await member.add_roles(interaction.guild.get_role(sector_list[my_sector]))
-
-            # Register the player in the database
             db["stats"][user.id] = Player(user.name, self.character_name, my_sector, *self.stats)
-
             await interaction.response.send_message(f"You have chosen {self.character_name}!", ephemeral=True)
             update_db()
         else:
@@ -217,9 +210,15 @@ class CharacterButton(discord.ui.Button):
 class CharacterSelectionView(discord.ui.View):
     def __init__(self, character_arrangement):
         super().__init__()
+        colors = [
+            discord.ButtonStyle.gray,
+            discord.ButtonStyle.blurple,
+            discord.ButtonStyle.red,
+            discord.ButtonStyle.success
+        ]
         for key, value in character_arrangement.items():
-            self.add_item(CharacterButton(value["class"], value["stats"]))
-            
+            self.add_item(CharacterButton(value["class"],stats=value["stats"], color=colors[value["index"]]))
+      
 @bot.hybrid_command()
 @commands.has_role("Coding Department")
 async def btn(ctx):
@@ -229,18 +228,22 @@ async def btn(ctx):
 
     character_arrangement = {
         "fighter": {
+            "index": 0,
             "class": "Fighter",
             "stats": [statistics[0], statistics[1], statistics[2], statistics[5], statistics[4], statistics[3]]
         },
         "rogue": {
+            "index": 1,
             "class": "Rogue",
             "stats": [statistics[1], statistics[0], statistics[2], statistics[4], statistics[3], statistics[5]]
         },
         "cleric": {
+            "index": 2,
             "class": "Cleric",
             "stats": [statistics[4], statistics[2], statistics[0], statistics[1], statistics[5], statistics[3]]
         },
         "wizard": {
+            "index": 3,
             "class": "Wizard",
             "stats": [statistics[3], statistics[1], statistics[2], statistics[5], statistics[4], statistics[0]]
         }
