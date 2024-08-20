@@ -1,6 +1,8 @@
 import os, discord, random, json
 from discord.ext import commands
 from dotenv import load_dotenv, dotenv_values
+import modal
+from modal import RegisterModal
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -51,6 +53,7 @@ def Player(name, class_name, sect, str, dex, con, int, wis, cha):
 @bot.event
 async def on_ready():
     print(f'We have logged in as {bot.user}')
+    await bot.tree.sync()
     
 @bot.hybrid_command()
 async def ping(ctx):
@@ -63,6 +66,10 @@ async def newgame(ctx):
         await register_message.add_reaction(emoji)
     db["registry"].append(register_message.id)
     update_db()
+
+@bot.command()
+async def setup(ctx):
+    await ctx.send("Hell nah, look at this guy using outdated commands.")
 
 @bot.hybrid_command()
 @commands.has_role("D&D Staff")
@@ -101,18 +108,6 @@ async def move(ctx, user: discord.User, sector: discord.TextChannel):
 
 @bot.hybrid_command()
 @commands.has_role("D&D Staff")
-async def register(ctx, user: discord.User, class_name: str, sector: discord.TextChannel, str_stat: int, dex_stat: int, con_stat: int, int_stat: int, wis_stat: int, cha_stat: int):
-    if user.id in db["stats"]:
-        await ctx.send("This user is already registered!")
-        return
-
-    new_player = Player(user.id, user.name, class_name, sector.name, str_stat, dex_stat, con_stat, int_stat, wis_stat, cha_stat)
-    db["stats"][user.id] = new_player
-    await ctx.send(f"Player {user.name} has been registered with the stats provided.")
-    update_db()
-
-@bot.hybrid_command()
-@commands.has_role("D&D Staff")
 async def stats(ctx, user: discord.User=None):
     if not user:
         user = ctx.author
@@ -129,7 +124,7 @@ async def stats(ctx, user: discord.User=None):
         await ctx.send(embed=embed)
     else:
         await ctx.send("No stats found for this user!")
-    
+
 @bot.hybrid_command()
 async def roll(ctx, sides: int=None):
     if not sides or sides not in [4, 6, 8, 10, 12, 20]:
@@ -140,6 +135,11 @@ async def roll(ctx, sides: int=None):
         for i in range(6):
             embed.add_field(name=f"Dice {i+1}", value=str(random.randint(1, sides) + 12))
         await ctx.send(embed=embed)
+
+@bot.tree.command()
+async def register(interaction: discord.Interaction):
+    await interaction.response.send_modal(RegisterModal())
+
 
 @bot.event
 async def on_reaction_add(reaction, user):
@@ -167,24 +167,8 @@ async def on_reaction_add(reaction, user):
                 db["stats"][user.id] = Player(user.name, "Cleric", my_sector, statistics[4], statistics[2], statistics[0], statistics[1], statistics[5], statistics[3])
             case "wizard":
                 db["stats"][user.id] = Player(user.name, "Wizard", my_sector, statistics[3], statistics[1], statistics[2], statistics[5], statistics[4], statistics[0])
-    '''elif user.id in db["stats"]:
-        member = await reaction.message.guild.fetch_member(user.id)
-        if reaction.message.guild.get_role(db["stats"][user.id]['Sector']) not in member.roles:
-            await member.add_roles(reaction.message.guild.get_role(sector_list[db["stats"][user.id]['Sector']]))'''
     update_db()
-# Rasty: added assign command to sync roles with the db
-@bot.hybrid_command()
-@commands.has_role("Coding Department")
-async def assign(ctx):
-    db["stats"] = {int(k): v for k, v in db["stats"].items()}    
-    for k, v in db["stats"].items():
-        member = await ctx.guild.fetch_member(k)
-        for role in sector_list.values():
-            if role in [r.id for r in member.roles]:
-                await member.remove_roles(ctx.guild.get_role(role))
-        await member.add_roles(ctx.guild.get_role(sector_list[v["Sector"]]))
-        
-        
+
 @bot.hybrid_command()
 @commands.has_role("Coding Department")
 async def stop(ctx):
