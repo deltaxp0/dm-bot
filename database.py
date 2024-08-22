@@ -18,12 +18,6 @@ def reset_db():
     update_db()
     return db
 
-def load_value(key):
-    try:
-        return db[key]
-    except KeyError:
-        return []
-
 if os.path.exists("db.json"):
     with open("db.json", "r") as file:
         db = json.load(file)
