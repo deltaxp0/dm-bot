@@ -42,11 +42,22 @@ async def register(interaction: discord.Interaction):
         await interaction.response.send_message("You have already registered!", ephemeral=True)
 
 @bot.command()
+@commands.has_role("Coding Department")
 async def data(ctx):
     await ctx.send(db)
 
 @bot.command()
+@commands.has_role("Coding Department")
+async def stop(ctx):
+    await ctx.send("Stopping...")
+    bot.close()
+    exit(0)
+
+
+@bot.command()
+@commands.has_role("Coding Department")
 async def reset(ctx):
+    await ctx.send("Reseting db...")
     global db
     db = reset_db()
 
